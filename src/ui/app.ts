@@ -7,7 +7,7 @@ import { cpuEngine, type EngineFactory } from '../core/engine';
 import { Optimizer, defaultOptimizerSettings, type OptimizerSettings } from '../core/adjoint';
 import { sceneToJSON, sceneFromJSON, fillDisk } from '../core/scene';
 import { presets, presetById } from '../presets';
-import { drawOverlay, type DragPreview } from './overlay';
+import { drawOverlay, buildEdgeLayer, type DragPreview } from './overlay';
 import { drawLines } from './charts';
 import { el, fmtSci } from './dom';
 
@@ -54,6 +54,7 @@ export class App {
   private painting = false;
   private lastPaint: { x: number; y: number } | null = null;
   private materialsDirty = false;
+  private edges: HTMLCanvasElement | null = null;
   private monitorValues = new Map<string, string>();
 
   // Optimizer
@@ -128,6 +129,7 @@ export class App {
     this.ensureMonitorLambdas();
     this.engine = this.engineFactory(this.scene, { fullDft: true }) as unknown as Engine;
     this.glRenderer?.updateMaterials(this.scene);
+    this.edges = buildEdgeLayer(this.scene);
     this.materialsDirty = false;
     this.fieldScale = 1; this.intensityScale = 1;
     this.monitorValues.clear();
@@ -153,7 +155,7 @@ export class App {
   private loop(): void {
     const eng = this.engine;
     if (eng) {
-      if (this.materialsDirty) { eng.updateMaterials(); eng.resetDft(); this.glRenderer?.updateMaterials(this.scene); this.materialsDirty = false; }
+      if (this.materialsDirty) { eng.updateMaterials(); eng.resetDft(); this.glRenderer?.updateMaterials(this.scene); this.edges = buildEdgeLayer(this.scene); this.materialsDirty = false; }
       if (this.running) {
         for (let i = 0; i < this.stepsPerFrame; i++) eng.advance();
         this.stepsThisSecond += this.stepsPerFrame;
@@ -224,7 +226,7 @@ export class App {
     if (this.overlay.width !== ow || this.overlay.height !== oh) { this.overlay.width = ow; this.overlay.height = oh; }
     const ctx = this.overlay.getContext('2d')!;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    drawOverlay(ctx, this.scene, cw, ch, this.cursor, this.drag, this.monitorValues);
+    drawOverlay(ctx, this.scene, cw, ch, this.cursor, this.drag, this.monitorValues, this.edges);
   }
 
   private updateStats(): void {
@@ -561,7 +563,7 @@ export class App {
       this.useGpuHint(),
     ]);
 
-    const panel = el('div', { class: 'panel' }, [header, presetSec, runSec, srcSec, toolSec, optSec, specSec, ioSec, footer]);
+    const panel = el('div', { class: 'panel' }, [header, presetSec, runSec, srcSec, toolSec, specSec, optSec, ioSec, footer]);
     this.root.replaceChildren(this.stage, panel);
   }
 

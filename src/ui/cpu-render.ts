@@ -24,7 +24,7 @@ export class CpuRenderer {
       if (mode === 'field') c = diverging((f.ezx[k] + f.ezy[k]) * scale, true);
       else if (mode === 'intensity' && f.fullRe && f.fullIm) {
         const I = (f.fullRe[k] * f.fullRe[k] + f.fullIm[k] * f.fullIm[k]) * scale;
-        c = inferno(Math.log(1 + 30 * I) / Math.log(31));
+        c = inferno(Math.log(1 + 60 * I) / Math.log(61));
       } else c = [0.08, 0.09, 0.12];
       const dd = Math.max(0, Math.min(1, (scene.eps[k] - 1) / Math.max(epsMax - 1, 1e-3)));
       if (dd > 0) { const w = dd * 0.75; c = [c[0] * (1 - w) + (c[0] * 1.6 + 0.1) * w, c[1] * (1 - w) + (c[1] * 1.6 + 0.1) * w, c[2] * (1 - w) + (c[2] * 1.6 + 0.1) * w]; }

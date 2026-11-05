@@ -2,11 +2,43 @@ import type { Scene } from '../core/types';
 
 export interface DragPreview { kind: 'line' | 'rect'; x0: number; y0: number; x1: number; y1: number }
 
+/**
+ * Material boundaries as a 1-pixel-per-cell image: a cell is marked where its
+ * permittivity or conductivity differs from its right or lower neighbour.
+ * Drawn scaled without smoothing, this gives crisp outlines of the device in
+ * any view (the same role as the epsilon contours in Meep plots).
+ */
+export function buildEdgeLayer(scene: Scene, threshold = 0.3): HTMLCanvasElement {
+  const { nx, ny, eps, sigma } = scene;
+  const c = document.createElement('canvas');
+  c.width = nx; c.height = ny;
+  const ctx = c.getContext('2d')!;
+  const img = ctx.createImageData(nx, ny);
+  const d = img.data;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+    const k = j * nx + i;
+    let edge = false;
+    if (i + 1 < nx && (Math.abs(eps[k] - eps[k + 1]) > threshold || (sigma[k] > 0) !== (sigma[k + 1] > 0))) edge = true;
+    if (j + 1 < ny && (Math.abs(eps[k] - eps[k + nx]) > threshold || (sigma[k] > 0) !== (sigma[k + nx] > 0))) edge = true;
+    if (edge) { d[4 * k] = 235; d[4 * k + 1] = 238; d[4 * k + 2] = 245; d[4 * k + 3] = 255; }
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
 /** Draws sources, monitors, design region, targets and the brush cursor over the field. */
-export function drawOverlay(ctx: CanvasRenderingContext2D, scene: Scene, w: number, h: number, cursor: { x: number; y: number; r: number } | null, drag: DragPreview | null, monitorValues: Map<string, string>): void {
+export function drawOverlay(ctx: CanvasRenderingContext2D, scene: Scene, w: number, h: number, cursor: { x: number; y: number; r: number } | null, drag: DragPreview | null, monitorValues: Map<string, string>, edges: HTMLCanvasElement | null): void {
   ctx.clearRect(0, 0, w, h);
   const sx = w / scene.nx, sy = h / scene.ny;
   const px = (i: number) => (i + 0.5) * sx, py = (j: number) => (j + 0.5) * sy;
+
+  if (edges) {
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.globalAlpha = 0.55;
+    ctx.drawImage(edges, 0, 0, w, h);
+    ctx.restore();
+  }
 
   // PML inner boundary
   ctx.setLineDash([4, 4]);

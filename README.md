@@ -9,7 +9,11 @@ for you.
 
 ![The optimizer fills a blank design region with a pattern that focuses a plane wave onto the target square](docs/media/inverse-lens.gif)
 
-*The "focus light" preset. The design region starts as uniform grey and after a few dozen iterations has become a lens that no one drew.*
+*The "focus light" preset. The design region starts as uniform grey and after 36 iterations has become a lens that no one drew (white lines are the permittivity contours; the objective, intensity at the green target, rose 21×).*
+
+![A silicon input waveguide is split into two outputs by an optimized design region](docs/media/inverse-splitter.gif)
+
+*The 1×2 splitter preset, steady-state intensity view: silicon in silica at 1550 nm. The optimizer carves the design region so that both output waveguides light up.*
 
 ## What it does
 
@@ -34,6 +38,14 @@ for you.
 
 Eight presets cover the classics (double slit, dielectric lens, waveguide
 bend, ring resonator, photonic crystal) and three inverse-design problems.
+
+![Double slit intensity pattern](docs/media/double-slit.png)
+
+*Double slit, intensity view: the two beams and their interference lobes behind a metal screen.*
+
+![Ring resonator with the transmission spectrum building up in the monitor panel](docs/media/ring-resonator-page.png)
+
+*Ring resonator driven by a pulse. The monitor panel accumulates the spectra at the through port and inside the ring while the simulation runs.*
 
 ## Why I built it
 
