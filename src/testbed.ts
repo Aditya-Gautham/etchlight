@@ -11,6 +11,7 @@ export const testbed = {
   CpuFdtd, GlFdtd, glEngine, cpuEngine,
   createScene, fillRect, fillDisk, addSource, addMonitor, setDesign, addTarget,
   Optimizer, solvePhasor, objectiveValue, defaultOptimizerSettings, presets,
+  app: null as unknown,
 };
 
 declare global {

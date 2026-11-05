@@ -35,10 +35,10 @@ export class CpuFdtd {
   readonly hy: Float32Array;
 
   // Update coefficients, one per cell.
-  readonly caX: Float32Array; readonly cbX: Float32Array;
-  readonly caY: Float32Array; readonly cbY: Float32Array;
-  readonly daX: Float32Array; readonly dbX: Float32Array; // Hy
-  readonly daY: Float32Array; readonly dbY: Float32Array; // Hx
+  caX: Float32Array; cbX: Float32Array;
+  caY: Float32Array; cbY: Float32Array;
+  daX: Float32Array; dbX: Float32Array; // Hy
+  daY: Float32Array; dbY: Float32Array; // Hx
 
   readonly src: SourceCells;
   readonly srcScale: Float32Array;
@@ -162,6 +162,23 @@ export class CpuFdtd {
 
   run(steps: number): void {
     for (let s = 0; s < steps; s++) this.advance();
+  }
+
+  /** Recompute update coefficients after scene.eps / scene.sigma changed, keeping the fields. */
+  updateMaterials(): void {
+    const c = computeCoefficients(this.scene);
+    this.caX = c.caX; this.cbX = c.cbX; this.caY = c.caY; this.cbY = c.cbY;
+    this.daX = c.daX; this.dbX = c.dbX; this.daY = c.daY; this.dbY = c.dbY;
+    for (let s = 0; s < this.src.index.length; s++) this.srcScale[s] = this.dt / this.scene.eps[this.src.index[s]];
+  }
+
+  /** Clear the DFT accumulators (e.g. after the geometry changed). */
+  resetDft(): void {
+    this.dftSteps = 0;
+    this.fullRe?.fill(0);
+    this.fullIm?.fill(0);
+    for (const a of this.monRe) a.fill(0);
+    for (const a of this.monIm) a.fill(0);
   }
 
   /** Copy of the whole-grid DFT accumulators (throws if not enabled). */

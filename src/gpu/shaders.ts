@@ -132,6 +132,7 @@ vec3 inferno(float t) {
 void main() {
   vec2 uv = gl_FragCoord.xy / uView;
   ivec2 p = ivec2(uv * vec2(uSize));
+  p.y = uSize.y - 1 - p.y;  // cell row 0 is drawn at the top, like a 2D canvas
   p = clamp(p, ivec2(0), uSize - 1);
   vec4 m = texelFetch(uMat, p, 0);
   vec3 col;

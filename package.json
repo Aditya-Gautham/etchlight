@@ -14,7 +14,9 @@
     "validate": "vitest run --reporter=verbose tests/validation.test.ts"
   },
   "devDependencies": {
+    "gifenc": "^1.0.3",
     "playwright": "^1.63.0",
+    "pngjs": "^7.0.0",
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "vitest": "^3.2.4"
