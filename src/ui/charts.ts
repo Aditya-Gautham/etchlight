@@ -29,11 +29,13 @@ export function drawLines(canvas: HTMLCanvasElement, series: Series[], opts: { x
   ctx.strokeStyle = '#2a3140'; ctx.lineWidth = 1;
   ctx.strokeRect(L, T, w - L - R, h - T - B);
   ctx.fillStyle = '#8b94a7'; ctx.font = '10px sans-serif';
-  ctx.fillText(opts.xLabel, w - R - ctx.measureText(opts.xLabel).width, h - 6);
+  ctx.fillText(opts.xLabel, L + (w - L - R - ctx.measureText(opts.xLabel).width) / 2, h - 6);
   ctx.save(); ctx.translate(10, T + 4); ctx.rotate(-Math.PI / 2); ctx.fillText(opts.yLabel, -ctx.measureText(opts.yLabel).width, 0); ctx.restore();
   const fmt = (v: number) => (opts.logY ? '1e' + v.toFixed(0) : Math.abs(v) >= 100 ? v.toFixed(0) : v.toPrecision(2));
   ctx.fillText(fmt(yMax), 12, T + 10); ctx.fillText(fmt(yMin), 12, h - B);
-  ctx.fillText(xMin.toFixed(0), L, h - 6); ctx.fillText(xMax.toFixed(0), X(xMax) - 20, h - 6);
+  ctx.fillText(xMin.toFixed(0), L, h - 6);
+  const xMaxLabel = xMax.toFixed(0);
+  ctx.fillText(xMaxLabel, X(xMax) - ctx.measureText(xMaxLabel).width, h - 6);
   for (const s of series) {
     ctx.strokeStyle = s.color; ctx.lineWidth = 1.5; ctx.beginPath();
     for (let i = 0; i < s.x.length; i++) {

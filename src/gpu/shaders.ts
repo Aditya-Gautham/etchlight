@@ -142,7 +142,7 @@ void main() {
   } else if (uMode == 1) {
     vec4 d = texelFetch(uDft, p, 0);
     float I = (d.x * d.x + d.y * d.y) * uScale;
-    col = inferno(log(1.0 + 30.0 * I) / log(31.0));
+    col = inferno(log(1.0 + 60.0 * I) / log(61.0));
   } else {
     col = uDark == 1 ? vec3(0.08, 0.09, 0.12) : vec3(1.0);
   }
