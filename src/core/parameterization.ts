@@ -1,14 +1,7 @@
-/**
- * Density-based topology-optimization parameterization, as used in the
- * photonic inverse-design literature (Jensen & Sigmund 2011; Piggott et al.
- * 2015; Hammond et al. 2021):
- *
- *   rho (free, in [0,1])  --conic filter-->  rhoTilde  --tanh projection-->  rhoHat
- *   eps = epsMin + (epsMax - epsMin) * rhoHat
- *
- * The filter enforces a minimum feature size; the projection pushes the
- * design toward binary (fabricable) as beta grows.
- */
+// Density parameterization (Jensen & Sigmund 2011 style):
+//   rho in [0,1] -> conic filter -> rhoTilde -> tanh projection -> rhoHat
+//   eps = epsMin + (epsMax - epsMin) * rhoHat
+// Filter sets a minimum feature size, projection pushes toward binary as beta grows.
 
 export interface DesignShape { w: number; h: number }
 
@@ -32,11 +25,7 @@ export function conicFilter(src: Float32Array, out: Float32Array, shape: DesignS
   }
 }
 
-/**
- * Transpose of conicFilter (needed for the chain rule). Because of the
- * per-pixel normalization the operator is not symmetric at the edges, so we
- * apply the true transpose: out[j] = sum_i K[i,j] / norm[i] * v[i].
- */
+/** Transpose of conicFilter. Not symmetric at the edges because of the per-pixel normalization. */
 export function conicFilterTranspose(v: Float32Array, out: Float32Array, shape: DesignShape, radius: number): void {
   const { w, h } = shape;
   const r = Math.max(0, Math.ceil(radius));

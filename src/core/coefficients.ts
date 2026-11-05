@@ -2,9 +2,7 @@ import type { Scene } from './types';
 import { buildPml } from './pml';
 
 /**
- * Per-cell update coefficients of the semi-implicit lossy Yee scheme.
- * Computed once per scene and shared by the CPU and GPU solvers so both
- * integrate exactly the same difference equations.
+ * Per-cell update coefficients, shared by the CPU and GPU solvers.
  *
  *   Ezx <- caX*Ezx + cbX*(Hy(i,j) - Hy(i-1,j))
  *   Ezy <- caY*Ezy - cbY*(Hx(i,j) - Hx(i,j-1))
@@ -33,8 +31,7 @@ export function computeCoefficients(scene: Scene): Coefficients {
       const k = j * nx + i;
       const eps = scene.eps[k];
       const sm = scene.sigma[k];
-      // Electric losses: PML conductivity scaled by eps keeps the layer
-      // impedance-matched even where a dielectric runs into it.
+      // PML sigma scaled by eps keeps the layer matched where a dielectric runs into it
       const lx = pml.sxE[i] * eps + sm;
       const ly = pml.syE[j] * eps + sm;
       const ax = (lx * dt) / (2 * eps);
@@ -43,7 +40,7 @@ export function computeCoefficients(scene: Scene): Coefficients {
       c.cbX[k] = dt / eps / (1 + ax);
       c.caY[k] = (1 - ay) / (1 + ay);
       c.cbY[k] = dt / eps / (1 + ay);
-      // Magnetic losses (mu = 1): sigma* = sigma_pml.
+      // mu = 1 so sigma* = sigma_pml
       const bx = (pml.sxH[i] * dt) / 2;
       const by = (pml.syH[j] * dt) / 2;
       c.daX[k] = (1 - bx) / (1 + bx);

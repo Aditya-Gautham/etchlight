@@ -1,12 +1,7 @@
-/**
- * WebGL2 implementation of the same 2D TM FDTD scheme as src/core/fdtd.ts.
- * Fields live in an RGBA32F texture (Ezx, Ezy, Hx, Hy); each time step is two
- * fragment-shader passes (H update, then E update + sources), plus optional
- * passes for the whole-grid DFT and the point-monitor DFTs. Update
- * coefficients are computed on the CPU by the shared `computeCoefficients`
- * so the two engines integrate identical difference equations; the e2e
- * parity test checks they agree to float precision.
- */
+// WebGL2 version of core/fdtd.ts. Fields in one RGBA32F texture (Ezx, Ezy,
+// Hx, Hy), two fragment passes per step (H, then E + sources), optional DFT
+// passes. Coefficients come from the same computeCoefficients as the CPU
+// engine; e2e/run.mjs checks the two agree.
 import type { Scene } from '../core/types';
 import type { FdtdOptions } from '../core/fdtd';
 import type { FieldRunner } from '../core/engine';
@@ -269,7 +264,7 @@ export class GlFdtd implements FieldRunner {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
-  /** Steps per chunk before yielding to the event loop in run(). */
+  /** steps between yields to the event loop in run() */
   chunk = 400;
 
   async run(n: number): Promise<void> {

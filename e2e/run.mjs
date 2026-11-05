@@ -63,7 +63,7 @@ console.log('[e2e] GPU/CPU parity after', parity.steps, 'steps on', parity.rende
 console.log(`[e2e]   max |field diff| / peak |Ez| = ${parity.rel.toExponential(2)}`);
 console.log(`[e2e]   whole-grid DFT rel. diff   = ${parity.dftRel.toExponential(2)}`);
 console.log(`[e2e]   monitor DFT rel. diff      = ${parity.monRel.toExponential(2)}`);
-console.log(`[e2e]   CPU ${parity.tCpu.toFixed(0)} ms, GPU ${parity.tGpu.toFixed(0)} ms (software GL in CI; real GPUs are far faster)`);
+console.log(`[e2e]   CPU ${parity.tCpu.toFixed(0)} ms, GPU ${parity.tGpu.toFixed(0)} ms (software GL)`);
 const ok1 = parity.rel < 1e-5 && parity.dftRel < 1e-5 && parity.monRel < 1e-5;
 if (!ok1) { console.error('[e2e] FAIL: parity tolerance exceeded'); process.exitCode = 1; }
 

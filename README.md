@@ -1,160 +1,89 @@
 # etchlight
 
-A 2D electromagnetic simulator that runs on your GPU in the browser, with
-adjoint-method inverse design on top: draw a photonic device and watch light
-move through it, or mark a target and let gradient descent carve the device
-for you.
+2D electromagnetic simulation (FDTD) that runs on the GPU in your browser, plus adjoint-method inverse design. You can draw a photonic device and watch light go through it, or draw a target and let the optimizer figure out the device.
 
-**Live demo:** https://USERNAME.github.io/etchlight/
+Live: https://aditya-gautham.github.io/etchlight/
 
-![The optimizer fills a blank design region with a pattern that focuses a plane wave onto the target square](docs/media/inverse-lens.gif)
+![optimizer turning a blank region into a lens](docs/media/inverse-lens.gif)
 
-*The "focus light" preset. The design region starts as uniform grey and after 36 iterations has become a lens that no one drew (white lines are the permittivity contours; the objective, intensity at the green target, rose 21×).*
+The "focus light" preset. The design region starts out uniform and after ~36 iterations it's a lens. White lines are permittivity contours. Intensity at the green target went up about 21x.
 
-![A silicon input waveguide is split into two outputs by an optimized design region](docs/media/inverse-splitter.gif)
+![1x2 splitter](docs/media/inverse-splitter.gif)
 
-*The 1×2 splitter preset, steady-state intensity view: silicon in silica at 1550 nm. The optimizer carves the design region so that both output waveguides light up.*
+Same idea for a 1x2 splitter, silicon in silica at 1550 nm, intensity view.
 
-## What it does
+## what it does
 
-- **Simulates Maxwell's equations** (2D, TM polarization) with the
-  finite-difference time-domain method on a Yee grid, with a split-field
-  perfectly matched layer so waves leave the domain instead of bouncing back.
-- **Runs on the GPU** through WebGL2 fragment shaders. A 320×240 grid steps
-  hundreds of times per frame on an ordinary laptop. A CPU engine with the
-  identical difference equations is the reference implementation and the
-  fallback.
-- **Measures** things: point monitors accumulate running Fourier transforms,
-  so a pulse through a ring resonator gives you its transmission spectrum, and
-  the whole-grid DFT gives the steady-state intensity map.
-- **Designs devices** with the adjoint method. One forward and one adjoint
-  simulation give the gradient of an objective with respect to the
-  permittivity of every cell in a design region; a filtered, projected density
-  parameterization and Adam turn that into a lens, a 1×2 splitter or a
-  low-loss sharp bend.
-- **Lets you draw.** Brush dielectrics and metals, drop point and line
-  sources, place monitors, drag out design regions and targets, export and
-  import scenes as JSON.
+- Solves Maxwell's equations in 2D (TM polarization) with the Yee FDTD scheme and a split-field PML so waves leave the domain instead of bouncing back.
+- Runs in WebGL2 fragment shaders. There's also a CPU version with the exact same update equations, which is what the tests run against. The two agree to ~1e-6.
+- Point monitors accumulate running DFTs, so you can send a pulse through a ring resonator and get a spectrum out. The whole-grid DFT gives the steady state intensity map.
+- Inverse design with the adjoint method: one forward sim and one adjoint sim give the gradient of the objective with respect to every cell in the design region. Filtered + projected density parameterization, Adam steps.
+- Drawing tools for dielectrics and metals, point/line sources, monitors, design regions and targets. Scenes export to JSON.
 
-Eight presets cover the classics (double slit, dielectric lens, waveguide
-bend, ring resonator, photonic crystal) and three inverse-design problems.
+Presets: double slit, dielectric lens, waveguide bend, ring resonator, photonic crystal, and three inverse design problems (focus, splitter, sharp bend).
 
-![Double slit intensity pattern](docs/media/double-slit.png)
+![double slit](docs/media/double-slit.png)
 
-*Double slit, intensity view: the two beams and their interference lobes behind a metal screen.*
+![ring resonator](docs/media/ring-resonator-page.png)
 
-![Ring resonator with the transmission spectrum building up in the monitor panel](docs/media/ring-resonator-page.png)
+## how it works
 
-*Ring resonator driven by a pulse. The monitor panel accumulates the spectra at the through port and inside the ring while the simulation runs.*
+See [docs/physics.md](docs/physics.md). It goes through the grid and units, the lossy update, the PML, sources and the DFT, numerical dispersion, the adjoint derivation (including the correction you need for the discrete scheme), the parameterization, and how the GPU passes are laid out.
 
-## Why I built it
+[docs/validation.md](docs/validation.md) has every number the test suite measures.
 
-I wanted a project at the intersection of the three things I like: physics,
-electrical engineering and writing fast code. Inverse design is how modern
-photonic devices are increasingly made, the tools for it (Meep, Lumerical,
-ceviche) are desktop or cloud software, and I could not find anything that
-let you watch the optimizer work in a browser tab. Building one meant
-deriving the adjoint gradient for the *discrete* scheme, not just the
-textbook continuous one, and proving it with a finite-difference check.
+## validation
 
-## How it works
-
-`docs/physics.md` walks through every piece: units and the Yee grid, the
-semi-implicit lossy update, the PML and why its conductivity is scaled by
-the local permittivity, sources and the DFT, stability and numerical
-dispersion, the adjoint derivation with the correction that the leapfrog
-scheme needs, the filter/projection parameterization, and the GPU passes.
-
-`docs/validation.md` lists every measured number from the test suite.
-
-## Validation
-
-| Check | Result |
+| check | result |
 |---|---|
-| Fresnel reflection at an n = 2 interface | \|r\| = 0.338 vs 1/3 |
-| Vacuum phase velocity at 20 cells/λ | 0.994 c (matches the dispersion relation) |
+| Fresnel reflection at n=2, normal incidence | \|r\| = 0.338, theory 0.333 |
+| phase velocity at 20 cells/wavelength | 0.994 c, which matches the dispersion relation |
 | PML reflection, 16 cells | -54 dB |
-| Reciprocity (source and monitor swapped) | 1e-7 relative |
-| Adjoint gradient vs finite differences | cosine similarity 1.00000, scale 1.0001 |
-| GPU vs CPU after 600 steps | 7e-7 of the peak field |
+| reciprocity (swap source and monitor) | 1e-7 relative |
+| adjoint gradient vs finite differences | cosine 1.00000, scale 1.0001 |
+| GPU vs CPU after 600 steps | 7e-7 of peak field |
 
-All of these run in CI on every push (`npm test` for the physics,
-`npm run e2e` for GPU/CPU parity in headless Chromium).
+These run in CI (`npm test` for the physics, `npm run e2e` for GPU/CPU parity in headless Chromium).
 
-## Two things that went wrong
+## things that went wrong
 
-They are the parts I learned most from, so they are documented rather than
-hidden.
+The adjoint gradient was about 2% off at first and I couldn't tell why. The textbook derivation gives dJ/dε = 2ω² Re(E λ). Against finite differences that had cosine similarity 0.9986, which is close enough that the optimizer still worked, but some cells were off by 80%. Turns out the leapfrog scheme sees ω̃ = (2/dt) sin(ω dt/2) instead of ω, and injecting the source after the curl update adds a factor of e^{iω dt/2}. Dividing the adjoint source by that fixed it (cosine 1.00000, scale 1.0001).
 
-**The adjoint gradient was 2% off and I did not know why.** The continuous
-derivation gives `dJ/dε = 2ω² Re(E λ)`. Checked against finite differences it
-had a cosine similarity of 0.9986 and a fitted scale of 0.976, which is close
-enough that the optimizer still worked, and wrong enough that cells with
-small gradients were off by up to 80%. The cause: the leapfrog scheme sees
-`ω̃ = (2/dt) sin(ω dt/2)` instead of `ω`, and injecting the source after the
-curl update multiplies it by `e^{iω dt/2}`. Dividing the adjoint source by
-that factor took the cosine to 1.00000 and the scale to 1.0001.
+The GPU also disagreed with the CPU by 1e-3 right at the source cells. The shader was computing cos(ωt + φ) itself and GPU trig is allowed to be approximate. Now all the time dependent trig happens on the CPU in double and gets passed in as uniforms.
 
-**The GPU disagreed with the CPU by 1e-3 at the source cells.** The shader
-evaluated `cos(ωt + φ)` itself, and GPU trigonometry is allowed to be
-approximate. All time-dependent trig now runs in double precision on the CPU
-and is passed in as uniforms; the shader does multiply-adds only. The
-remaining difference, 7e-7, is float32 rounding.
+## running it
 
-## Running it locally
-
-```bash
+```
 npm install
-npm run dev        # http://localhost:5173
-npm test           # physics + adjoint tests (about 15 s)
+npm run dev
+npm test
 npm run build
-npm run e2e        # GPU/CPU parity in headless Chromium
+npm run e2e
 ```
 
-The e2e script uses software WebGL, so it is slow; it exists to check
-correctness, not speed.
+The e2e script uses software WebGL so it's slow. It's there for correctness, not speed.
 
-## Project layout
+## layout
 
 ```
-src/core/      solver, PML, sources, DFT, adjoint, parameterization (pure TypeScript, no DOM)
-src/gpu/       WebGL2 engine, shaders, display renderer
-src/ui/        the app: canvas interaction, panel, charts
-src/presets.ts the experiments
-tests/         vitest physics and adjoint tests
-e2e/           Playwright parity test and static server
-tools/         README media capture
-docs/          physics write-up, validation numbers, media
+src/core/    solver, PML, sources, DFT, adjoint, parameterization (no DOM)
+src/gpu/     WebGL2 engine, shaders, renderer
+src/ui/      the app
+src/presets.ts
+tests/       vitest
+e2e/         playwright parity test
+tools/       readme media capture
+docs/
 ```
 
-Only three runtime-free dev dependencies: Vite, TypeScript, Vitest (plus
-Playwright for the browser tests). There is no framework; the UI is about
-600 lines of plain DOM code.
+No framework, the UI is plain DOM.
 
-## Limitations
+## limitations
 
-- 2D and TM only. Real devices are 3D; 2D captures the physics of planar
-  photonics qualitatively and is what the inverse-design papers' tutorials
-  use, but the numbers are not fab-ready.
-- Materials are non-dispersive. "Metal" is a conductor with σ = 20, which is
-  a fine mirror but not a Drude model of gold.
-- The split-field PML reflects more at grazing incidence than a CPML would.
-- The objective is intensity at target cells. Mode-overlap objectives, which
-  is what you want for waveguide devices, are the obvious next step.
-- Minimum feature size is enforced by the filter radius only; there is no
-  geometric length-scale constraint, so designs can still have thin bridges
-  at the projection threshold.
-- Optimization with the CPU engine works but is slow; use a browser with
-  WebGL2 float render targets (any current desktop browser).
+2D and TM only. Materials are non-dispersive (the "metal" is just a conductor with σ=20). The split-field PML gets worse at grazing angles, a CPML would be better. The objective is intensity at target cells; for real waveguide devices you'd want a mode overlap objective. The filter radius is the only feature size control, so designs can still have thin bridges near the projection threshold. Optimizing on the CPU engine works but is slow.
 
-## References
+## references
 
-Taflove and Hagness, *Computational Electrodynamics* (3rd ed.); Berenger,
-J. Comput. Phys. 114 (1994); Jensen and Sigmund, Laser & Photonics Reviews 5
-(2011); Piggott et al., Nature Photonics 9 (2015); Hughes et al., ACS
-Photonics 6 (2019); Hammond et al., Optics Express 30 (2022). Full citations
-in `docs/physics.md`.
+Taflove & Hagness, Computational Electrodynamics (3rd ed). Berenger 1994 (PML). Jensen & Sigmund 2011 (topology optimization for photonics). Piggott et al. 2015. Hughes et al. 2019 (ceviche). Hammond et al. 2022 (Meep adjoint).
 
-## License
-
-MIT.
+MIT license.

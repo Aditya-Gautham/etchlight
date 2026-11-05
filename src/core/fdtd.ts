@@ -1,15 +1,8 @@
-/**
- * CPU reference implementation of the 2D TM_z Yee FDTD scheme with a
- * split-field Berenger PML. This is the ground truth that the tests check
- * against analytic results and that the WebGL2 implementation must match.
- *
- * Field components: Ez (stored as Ezx + Ezy for the PML split), Hx, Hy.
- * Grid staggering (Yee):
- *   Ez(i, j)         at integer nodes
- *   Hx(i, j + 1/2)   between Ez(i,j) and Ez(i,j+1)
- *   Hy(i + 1/2, j)   between Ez(i,j) and Ez(i+1,j)
- * Units: c = eps0 = mu0 = dx = 1, so dt is the Courant number.
- */
+// CPU reference solver: 2D TM Yee FDTD with split-field PML. The tests run
+// against this and the GPU engine has to match it.
+// Ez is stored as Ezx + Ezy (PML split). Staggering:
+//   Ez(i,j) integer nodes, Hx(i,j+1/2), Hy(i+1/2,j)
+// Units: c = eps0 = mu0 = dx = 1, dt is the Courant number.
 import type { Scene } from './types';
 import { computeCoefficients } from './coefficients';
 import { expandSources, type SourceCells } from './sources';
@@ -103,7 +96,7 @@ export class CpuFdtd {
 
   advance(): void {
     const { nx, ny, ezx, ezy, hx, hy } = this;
-    // --- H update (uses Ez at time n) ---
+    // H update
     for (let j = 0; j < ny; j++) {
       const row = j * nx;
       const up = j + 1 < ny;
@@ -116,7 +109,7 @@ export class CpuFdtd {
         hy[k] = this.daX[k] * hy[k] + this.dbX[k] * (ezRight - ez);
       }
     }
-    // --- E update (uses H at time n+1/2) ---
+    // E update
     for (let j = 0; j < ny; j++) {
       const row = j * nx;
       for (let i = 0; i < nx; i++) {
@@ -129,12 +122,12 @@ export class CpuFdtd {
     }
     this.step++;
     const t = this.time;
-    // --- Sources: soft current injection, Ez += -(dt/eps) * J with J = -amp*w(t) ---
+    // soft source: Ez += -(dt/eps) J, J = -amp*w(t)
     const src = this.src;
     for (let s = 0; s < src.index.length; s++) {
       ezx[src.index[s]] += this.srcScale[s] * src.amp[s] * evalWaveform(this.wf, t, src.phase[s]);
     }
-    // --- DFTs (convention: X(w) = sum x(t) e^{-i w t} dt) ---
+    // DFTs, X(w) = sum x(t) e^{-iwt} dt
     if (this.step > this.dftStartStep) {
       this.dftSteps++;
       const dt = this.dt;

@@ -2,7 +2,7 @@
   "name": "etchlight",
   "version": "0.1.0",
   "private": true,
-  "description": "GPU Maxwell solver and adjoint inverse design for 2D photonics, in the browser",
+  "description": "2D FDTD in WebGL2 with adjoint inverse design",
   "type": "module",
   "scripts": {
     "dev": "vite",

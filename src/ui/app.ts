@@ -442,7 +442,7 @@ export class App {
 
     const header = el('div', {}, [
       el('h1', {}, ['etch', el('span', { text: 'light' })]),
-      el('p', { class: 'tagline', text: 'GPU Maxwell solver and adjoint inverse design for 2D photonics. Draw a device, or let gradient descent draw it.' }),
+      el('p', { class: 'tagline', text: '2D FDTD in WebGL2 with adjoint inverse design. Draw a device or let the optimizer do it.' }),
       el('div', { class: 'links' }, [
         el('a', { href: 'https://github.com/' + (import.meta.env.VITE_REPO ?? 'etchlight/etchlight'), target: '_blank', text: 'Source' }),
         el('a', { href: 'https://github.com/' + (import.meta.env.VITE_REPO ?? 'etchlight/etchlight') + '/blob/main/docs/physics.md', target: '_blank', text: 'How it works' }),
@@ -525,13 +525,13 @@ export class App {
       el('div', { class: 'row', style: 'margin-top:8px' }, [swatches]),
       el('div', { class: 'row' }, [el('label', { text: 'brush size' }), radius, radiusVal]),
       el('div', { class: 'row' }, [clearSrc, clearMon, clearTargets]),
-      el('p', { class: 'blurb', text: 'Drag on the canvas to draw. Line source, design region and targets are click-and-drag. Shortcuts: space play/pause, r reset, 1/2/3 views, b brush, e erase.' }),
+      el('p', { class: 'blurb', text: 'Drag to draw. Line source, design region and targets are drag rectangles. Keys: space play/pause, r reset, 1/2/3 views, b brush, e erase.' }),
     ]);
 
     // Spectrum
     u.spectrum = el('canvas', { class: 'chart' });
     u.legend = el('div', { class: 'legend' });
-    const specSec = el('section', {}, [el('h2', { text: 'Monitors' }), u.spectrum, u.legend, el('p', { class: 'blurb', text: 'With a pulse source, each monitor accumulates a running DFT and the chart shows its spectrum. With a CW source the phasor amplitude is printed next to the monitor.' })]);
+    const specSec = el('section', {}, [el('h2', { text: 'Monitors' }), u.spectrum, u.legend, el('p', { class: 'blurb', text: 'Pulse source: each monitor accumulates a DFT and the chart shows the spectrum. CW source: the phasor amplitude is printed next to the monitor.' })]);
 
     // Optimizer
     u.optBtn = el('button', { class: 'primary', text: 'Optimize' });
@@ -548,7 +548,7 @@ export class App {
       el('div', { class: 'row' }, [u.optBtn, clearDesignBtn]),
       el('div', { class: 'row' }, [el('label', { text: 'iterations' }), iters, el('label', { text: 'step size' }), lr]),
       u.objective, u.optStatus,
-      el('p', { class: 'blurb', text: 'Each iteration runs one forward and one adjoint simulation to steady state, then takes an Adam step on the design density. The projection sharpness β grows over time so the design ends up close to binary.' }),
+      el('p', { class: 'blurb', text: 'One forward + one adjoint sim per iteration, then an Adam step on the density. β grows over time so the design ends up near binary.' }),
     ]);
 
     // Export
@@ -559,7 +559,7 @@ export class App {
     const ioSec = el('section', {}, [el('h2', { text: 'Scene' }), el('div', { class: 'row' }, [exp, impBtn, imp])]);
 
     const footer = el('div', { class: 'footer' }, [
-      'Units: c = ε₀ = μ₀ = 1, Courant number 0.5, 2D TM polarization (Ez, Hx, Hy). Materials are non-dispersive; metal is a conductor with σ = 20 (skin depth ≈ 1 cell). ',
+      'c = ε₀ = μ₀ = 1, Courant 0.5, TM (Ez, Hx, Hy). No dispersion; metal is σ = 20. ',
       this.useGpuHint(),
     ]);
 
@@ -569,7 +569,7 @@ export class App {
 
   private useGpuHint(): HTMLElement {
     const span = el('span', { class: 'warn' });
-    setTimeout(() => { if (!this.useGpu) span.textContent = 'WebGL2 float render targets are not available in this browser, so the CPU engine is used (slower).'; }, 0);
+    setTimeout(() => { if (!this.useGpu) span.textContent = 'No WebGL2 float render targets here, using the CPU engine (slow).'; }, 0);
     return span;
   }
 }

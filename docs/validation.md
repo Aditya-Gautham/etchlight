@@ -1,13 +1,13 @@
-# Validation
+# validation
 
-Every number below is produced by the test suite. Run
+Everything here comes out of the test suite:
 
 ```bash
 npm run validate      # physics tests, prints the measured values
 npm run build && npm run e2e   # GPU/CPU parity in headless Chromium
 ```
 
-## Physics tests (`tests/validation.test.ts`, CPU reference engine)
+## physics (`tests/validation.test.ts`, CPU engine)
 
 | Check | Setup | Measured | Expected | Tolerance |
 |---|---|---|---|---|
@@ -19,12 +19,11 @@ npm run build && npm run e2e   # GPU/CPU parity in headless Chromium
 | PML reflection | 16-cell cubic-graded layer, normal incidence pulse | -54.1 dB | < -50 dB | – |
 | Reciprocity | pulse source and monitor swapped in a scene with dielectric and lossy metal, 3 frequencies | 1.9e-7 to 1.2e-6 relative | 0 | 2e-3 |
 
-The Fresnel test deliberately keeps 20 cells per wavelength inside the
-dielectric. At 10 cells the measured \|r\| was 0.3506, which is the correct
-answer for the medium's numerical refractive index (2.03) rather than a
-solver bug; see `physics.md` §5.
+The Fresnel test keeps 20 cells per wavelength inside the dielectric on
+purpose. At 10 cells |r| came out 0.3506, which is the right answer for the
+medium's numerical index (2.03), not a solver bug. See physics.md.
 
-## Adjoint tests (`tests/adjoint.test.ts`)
+## adjoint (`tests/adjoint.test.ts`)
 
 | Check | Setup | Measured | Tolerance |
 |---|---|---|---|
@@ -32,10 +31,10 @@ solver bug; see `physics.md` §5.
 | Parameterization chain rule | conic filter R = 2.5, projection β = 6, 8 probe cells | 0.37% max error | 1% |
 | Optimizer makes progress | 5 Adam iterations on the same scene | J: 1.00 → 2.63 → 2.94 → 3.18 → 3.40 | J₅ > 1.2 J₁ |
 
-The same gradient check without the discrete-frequency correction described
-in `physics.md` §6 gave cosine 0.9986 and scale 0.976.
+Without the discrete frequency correction (physics.md) the same check gave
+cosine 0.9986 and scale 0.976.
 
-## GPU/CPU parity (`e2e/run.mjs`, headless Chromium with SwiftShader)
+## GPU vs CPU (`e2e/run.mjs`, headless Chromium, SwiftShader)
 
 | Quantity after 600 steps | Relative difference |
 |---|---|
@@ -43,15 +42,12 @@ in `physics.md` §6 gave cosine 0.9986 and scale 0.976.
 | Whole-grid DFT | 4.2e-7 |
 | Point-monitor DFT | 1.5e-7 |
 
-The scene has a dielectric disk, a slab, a lossy metal blob, a point source
-and a phase-shifted line source. The tolerance is 1e-5. The e2e script also
-runs three GPU optimizer iterations on the focusing preset and checks that
-the objective increases.
+Scene: dielectric disk, slab, lossy metal blob, a point source and a phase
+shifted line source. Tolerance 1e-5. The script also runs three optimizer
+iterations on the GPU and checks the objective goes up.
 
-## What is not validated
+## not validated
 
-- Oblique-incidence PML reflection. The split-field PML is known to degrade
-  at grazing angles; a CPML would be better.
-- Absolute field amplitudes. All tests use ratios.
-- Anything about the TE polarization, dispersive materials or 3D, because the
-  solver does not implement them.
+- PML at oblique incidence (split-field PML is known to be worse at grazing angles).
+- Absolute field amplitudes, all tests use ratios.
+- TE, dispersive materials, 3D: not implemented.
