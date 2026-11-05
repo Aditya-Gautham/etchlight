@@ -98,17 +98,7 @@ export class GlFdtd implements FieldRunner {
     const c = computeCoefficients(scene);
     this.coefE = createFloatTexture(gl, nx, ny, interleave4(n, c.caX, c.cbX, c.caY, c.cbY));
     this.coefH = createFloatTexture(gl, nx, ny, interleave4(n, c.daX, c.dbX, c.daY, c.dbY));
-
-    const s = expandSources(scene);
-    const srcData = new Float32Array(n * 4);
-    for (let i = 0; i < s.index.length; i++) {
-      const k = s.index[i];
-      srcData[4 * k] = s.amp[i];
-      srcData[4 * k + 1] = Math.cos(s.phase[i]);
-      srcData[4 * k + 2] = Math.sin(s.phase[i]);
-      srcData[4 * k + 3] = dt / scene.eps[k];
-    }
-    this.src = createFloatTexture(gl, nx, ny, srcData);
+    this.src = createFloatTexture(gl, nx, ny, this.sourceData());
 
     const zeros = new Float32Array(n * 4);
     this.field = [createFloatTexture(gl, nx, ny, zeros), createFloatTexture(gl, nx, ny, zeros)];
@@ -145,6 +135,48 @@ export class GlFdtd implements FieldRunner {
       this.monOmega = new Float64Array(this.nFreq);
       for (let f = 0; f < this.nFreq; f++) this.monOmega[f] = (2 * Math.PI) / scene.monitorLambdas[f];
     }
+  }
+
+  private sourceData(): Float32Array {
+    const { nx, ny, dt, scene } = this;
+    const s = expandSources(scene);
+    const srcData = new Float32Array(nx * ny * 4);
+    for (let i = 0; i < s.index.length; i++) {
+      const k = s.index[i];
+      srcData[4 * k] = s.amp[i];
+      srcData[4 * k + 1] = Math.cos(s.phase[i]);
+      srcData[4 * k + 2] = Math.sin(s.phase[i]);
+      srcData[4 * k + 3] = dt / scene.eps[k];
+    }
+    return srcData;
+  }
+
+  private upload(tex: WebGLTexture, w: number, h: number, data: Float32Array): void {
+    const gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, w, h, gl.RGBA, gl.FLOAT, data);
+  }
+
+  /** Re-upload update coefficients after scene.eps / scene.sigma changed, keeping the fields. */
+  updateMaterials(): void {
+    const { nx, ny } = this;
+    const n = nx * ny;
+    const c = computeCoefficients(this.scene);
+    this.upload(this.coefE, nx, ny, interleave4(n, c.caX, c.cbX, c.caY, c.cbY));
+    this.upload(this.coefH, nx, ny, interleave4(n, c.daX, c.dbX, c.daY, c.dbY));
+    this.upload(this.src, nx, ny, this.sourceData());
+  }
+
+  /** Clear the DFT accumulators (e.g. after the geometry changed). */
+  resetDft(): void {
+    const gl = this.gl;
+    this.dftSteps = 0;
+    const clear = (fbs: WebGLFramebuffer[] | null) => {
+      if (!fbs) return;
+      for (const fb of fbs) { gl.bindFramebuffer(gl.FRAMEBUFFER, fb); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    };
+    clear(this.dftFbo); clear(this.monFbo);
   }
 
   private fbo(tex: WebGLTexture): WebGLFramebuffer {

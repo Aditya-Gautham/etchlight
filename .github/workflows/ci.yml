@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Type check and unit/physics tests
+        run: |
+          npx tsc --noEmit
+          npm test
+      - name: Build
+        run: npm run build
+        env:
+          VITE_REPO: ${{ github.repository }}
+      - name: Install Chromium for the GPU/CPU parity test
+        run: npx playwright install --with-deps chromium
+      - name: GPU/CPU parity (software WebGL)
+        run: npm run e2e
