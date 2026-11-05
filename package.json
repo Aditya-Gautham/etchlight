@@ -1,0 +1,21 @@
+{
+  "name": "etchlight",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GPU Maxwell solver and adjoint inverse design for 2D photonics, in the browser",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "node e2e/run.mjs",
+    "validate": "vitest run --reporter=verbose tests/validation.test.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vitest": "^3.2.4"
+  }
+}
