@@ -1,18 +1,10 @@
-/**
- * Adjoint-method inverse design on top of the FDTD solver.
- *
- * Objective:   J = sum_targets  w_t * sum_{r in t} |E(r)|^2   at one frequency.
- * Gradient:    dJ/d eps(r) = 2 w~^2 Re[ E(r) * lambda(r) ]
- * where E is the forward steady-state phasor and lambda is the field produced
- * by an "adjoint" current source placed at the target cells with phasor
- *   a_adj(r) = w_t * conj(E(r)) / (i w~ e^{i w dt/2}).
- * w~ = (2/dt) sin(w dt/2) is the frequency the leapfrog scheme actually
- * "sees", and the e^{i w dt/2} accounts for the source being injected a half
- * step after the curl (docs/physics.md has the derivation). The method relies
- * on reciprocity: the discrete Maxwell operator is symmetric, so the adjoint
- * simulation is just another forward simulation with a different source.
- * tests/adjoint.test.ts checks the gradient against central finite differences.
- */
+// Adjoint inverse design. See docs/physics.md for the derivation.
+//   J = sum_t w_t sum_{r in t} |E(r)|^2        (one frequency)
+//   dJ/deps(r) = 2 w~^2 Re[E(r) lambda(r)]
+// lambda comes from a second run with source w_t conj(E) / (i w~ e^{i w dt/2})
+// at the target cells. w~ = (2/dt) sin(w dt/2) is what the leapfrog scheme
+// sees, the phase factor is because the source goes in after the curl update.
+// tests/adjoint.test.ts checks this against finite differences.
 import type { Scene, SourceSpec, DesignSpec } from './types';
 import { cloneScene } from './scene';
 import type { EngineFactory } from './engine';
@@ -39,10 +31,7 @@ export function solveSteps(scene: Scene, st: SolveSettings): { settle: number; d
   return { settle: Math.round(st.settlePeriods * perPeriod), dft: Math.round(st.dftPeriods * perPeriod) };
 }
 
-/**
- * Run a continuous-wave simulation to steady state and return the complex
- * phasor of Ez on the whole grid, normalized so that Ez(t) = Re[E e^{i w t}].
- */
+/** CW run to steady state, returns the Ez phasor on the whole grid (Ez(t) = Re[E e^{iwt}]). */
 export async function solvePhasor(scene: Scene, sources: SourceSpec[], st: SolveSettings, engine: EngineFactory): Promise<PhasorField> {
   const s = cloneScene(scene);
   s.sources = sources;
@@ -155,10 +144,7 @@ export interface IterationResult {
   rhoHat: Float32Array;
 }
 
-/**
- * Gradient-ascent (Adam) loop over the density variables of the design
- * region. Each `step()` performs one forward and one adjoint simulation.
- */
+/** Adam ascent on the design density. One forward + one adjoint run per step(). */
 export class Optimizer {
   readonly design: DesignSpec;
   readonly shape: DesignShape;
@@ -205,7 +191,7 @@ export class Optimizer {
     for (let k = 0; k < gEps.length; k++) gHat[k] = gEps[k] * dEps;
     const gRho = backwardParam(gHat, rhoTilde, this.shape, this.design.radius, this.beta, st.eta);
 
-    // Adam, ascent direction. Normalize by the gradient's RMS so lr is in rho units.
+    // Adam (ascent). Gradient normalized by RMS so lr is in rho units.
     this.iteration++;
     const b1 = 0.9, b2 = 0.999, eps = 1e-12;
     let rms = 0;

@@ -1,5 +1,4 @@
-// Exposes the solver on window for the Playwright end-to-end tests
-// (e2e/run.mjs) and for poking at it from the browser console.
+// window.etchlight, used by e2e/run.mjs and handy in the console.
 import { CpuFdtd } from './core/fdtd';
 import { GlFdtd, glEngine } from './gpu/gl-fdtd';
 import { cpuEngine } from './core/engine';

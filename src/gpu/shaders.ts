@@ -35,13 +35,9 @@ void main() {
 }`;
 
 /**
- * E update + source injection. CoefE: (caX, cbX, caY, cbY).
- * Src: (amp, cos(phase), sin(phase), dt/eps). The time dependence
- * env(t)*cos(theta(t)) and env(t)*sin(theta(t)) is evaluated on the CPU in
- * double precision and passed as uniforms, so the shader only does
- * multiply-adds: cos(theta + phase) = cos(theta)cos(phase) - sin(theta)sin(phase).
- * GPU trig functions are allowed to be approximate, and the error would
- * otherwise show up as a GPU/CPU mismatch at the source cells.
+ * E update + sources. CoefE: (caX, cbX, caY, cbY). Src: (amp, cos(phase), sin(phase), dt/eps).
+ * env*cos(theta) and env*sin(theta) come in as uniforms computed on the CPU in double;
+ * GPU cos() is approximate and that showed up as a CPU/GPU mismatch at the source cells.
  */
 export const FRAG_E = HEADER + `
 uniform sampler2D uField;

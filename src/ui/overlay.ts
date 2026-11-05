@@ -2,12 +2,7 @@ import type { Scene } from '../core/types';
 
 export interface DragPreview { kind: 'line' | 'rect'; x0: number; y0: number; x1: number; y1: number }
 
-/**
- * Material boundaries as a 1-pixel-per-cell image: a cell is marked where its
- * permittivity or conductivity differs from its right or lower neighbour.
- * Drawn scaled without smoothing, this gives crisp outlines of the device in
- * any view (the same role as the epsilon contours in Meep plots).
- */
+/** Material edges as a 1px-per-cell image (cell differs from right or lower neighbour). */
 export function buildEdgeLayer(scene: Scene, threshold = 0.3): HTMLCanvasElement {
   const { nx, ny, eps, sigma } = scene;
   const c = document.createElement('canvas');
